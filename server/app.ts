@@ -97,4 +97,26 @@ export const scheduleReminders = () => {
   });
 };
 
+// Startup diagnostic: verify the database is actually reachable from this
+// host and log an unambiguous result, so deploy logs show immediately
+// whether DB connectivity (not application logic) is the problem.
+export const verifyDatabaseConnection = async () => {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error('[db-check] DATABASE_URL is NOT set — no database connection is possible');
+    return;
+  }
+  const host = url.match(/@([^/?]+)/)?.[1] ?? 'unknown-host';
+  try {
+    const prisma = (await import('./utils/prisma')).default;
+    await prisma.$queryRaw`SELECT 1`;
+    console.log(`[db-check] OK — database reachable at ${host}`);
+  } catch (error: any) {
+    console.error(
+      `[db-check] FAILED — cannot query database at ${host}: ` +
+      `${error?.name ?? 'Error'} ${error?.code ?? ''} ${error?.message?.split('\n').pop() ?? ''}`
+    );
+  }
+};
+
 export default app;
