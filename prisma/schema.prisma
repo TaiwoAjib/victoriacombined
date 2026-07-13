@@ -1,5 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  // Binary engine runs as a separate process instead of an in-process native
+  // library. Required under Phusion Passenger (Hostinger): Passenger forks the
+  // Node process and the library engine's async runtime does not survive the
+  // fork, panicking with "timer has gone away" on every query.
+  engineType    = "binary"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
