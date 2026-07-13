@@ -1,11 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  // Binary engine runs as a separate process instead of an in-process native
-  // library. Required under Phusion Passenger (Hostinger): Passenger forks the
-  // Node process and the library engine's async runtime does not survive the
-  // fork, panicking with "timer has gone away" on every query.
-  engineType    = "binary"
-  binaryTargets = ["native", "debian-openssl-1.1.x"]
+  // Engine-less client: queries are compiled in-process (WASM) and executed
+  // by the pure-JavaScript Neon driver over WebSocket (port 443). No native
+  // Rust engine — immune to Passenger fork panics ("timer has gone away")
+  // and to hosts that block outbound port 5432.
+  previewFeatures = ["driverAdapters", "queryCompiler"]
 }
 
 datasource db {
