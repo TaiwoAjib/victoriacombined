@@ -715,7 +715,19 @@ export default function Booking() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-lg font-semibold">Select Style</Label>
-            <Select value={selectedStyleId} onValueChange={setSelectedStyleId}>
+            <Select
+              value={selectedStyleId}
+              onValueChange={(value) => {
+                setSelectedStyleId(value);
+                // Variations belong to the style; a stylist only stays valid
+                // if they also offer the newly selected style.
+                setSelectedCategoryId('');
+                setSelectedStylistId((prev) => {
+                  const stylist = stylists.find((s) => s.id === prev);
+                  return stylist && stylist.styles?.some((st: any) => st.id === value) ? prev : '';
+                });
+              }}
+            >
               <SelectTrigger className="h-12 text-lg">
                 <SelectValue placeholder="Choose a style..." />
               </SelectTrigger>

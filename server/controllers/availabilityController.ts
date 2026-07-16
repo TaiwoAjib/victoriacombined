@@ -68,15 +68,11 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
     if (!requestedDuration) requestedDuration = 60;
 
     /* ---------------------------------------------------------
-       2. VALIDATE AND GET SELECTED STYLIST
+       2. GET STYLIST(S)
+       A stylist is optional: bookings can be made without one (the admin
+       assigns later), so without a stylistId we compute availability
+       across every active stylist that offers the selected style.
     --------------------------------------------------------- */
-
-    if (!stylistId) {
-        res.status(400).json({
-            message: 'Stylist must be selected'
-        });
-        return;
-    }
 
     let activeStylists: {
         id: string,
@@ -85,33 +81,45 @@ export const getAvailability = async (req: Request, res: Response): Promise<void
         leaves: { startDate: Date, endDate: Date }[]
     }[] = [];
 
-    const stylist = await prisma.stylist.findFirst({
-        where: {
-            id: stylistId as string,
-            isActive: true,
-            ...(styleId ? { styles: { some: { id: styleId as string } } } : {})
-        },
-        select: {
-            id: true,
-            workingHours: true,
-            user: { select: { fullName: true } },
-            leaves: {
-                where: {
-                    startDate: { lte: end },
-                    endDate: { gte: start }
-                }
+    const stylistSelect = {
+        id: true,
+        workingHours: true,
+        user: { select: { fullName: true } },
+        leaves: {
+            where: {
+                startDate: { lte: end },
+                endDate: { gte: start }
             }
         }
-    });
+    } as const;
 
-    if (!stylist) {
-        res.status(404).json({
-            message: 'Selected stylist not found or inactive'
+    if (stylistId) {
+        const stylist = await prisma.stylist.findFirst({
+            where: {
+                id: stylistId as string,
+                isActive: true,
+                ...(styleId ? { styles: { some: { id: styleId as string } } } : {})
+            },
+            select: stylistSelect
         });
-        return;
-    }
 
-    activeStylists = [stylist];
+        if (!stylist) {
+            res.status(404).json({
+                message: 'Selected stylist not found or inactive'
+            });
+            return;
+        }
+
+        activeStylists = [stylist];
+    } else {
+        activeStylists = await prisma.stylist.findMany({
+            where: {
+                isActive: true,
+                ...(styleId ? { styles: { some: { id: styleId as string } } } : {})
+            },
+            select: stylistSelect
+        });
+    }
 
     /* ---------------------------------------------------------
        3. GET EXISTING BOOKINGS
