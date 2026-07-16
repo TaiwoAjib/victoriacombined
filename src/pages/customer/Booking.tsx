@@ -942,9 +942,22 @@ export default function Booking() {
                                 });
 
                                 if (slots.length === 0) {
+                                    const hasBraider = selectedStylistId && selectedStylistId !== '--select a stylist--';
+                                    const braiderName = stylists.find(s => s.id === selectedStylistId)?.fullName;
+                                    let message: string;
+
+                                    if (isToday && rawSlots.length > 0) {
+                                        // Slots existed but every one has already passed
+                                        message = "Today's remaining appointments have already passed. Please choose another date.";
+                                    } else if (hasBraider) {
+                                        message = `${braiderName || 'The selected braider'} isn't available on this date. Try another date, or go back and choose a different braider.`;
+                                    } else {
+                                        message = 'No appointments are available on this date. Please choose another date.';
+                                    }
+
                                     return (
                                         <div className="col-span-full text-center text-muted-foreground py-8 border rounded-md border-dashed">
-                                            No available slots for this date for the selected stylist.
+                                            {message}
                                         </div>
                                     );
                                 }
