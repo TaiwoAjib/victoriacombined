@@ -61,6 +61,10 @@ export interface Booking {
     name: string;
   } | null;
   price: number;
+  amountPaid?: number;
+  attemptedAmount?: number;
+  paymentStatus?: 'successful' | 'failed' | null;
+  paymentCurrency?: string;
   stylist?: {
     id: string;
     user: {

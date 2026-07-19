@@ -928,6 +928,23 @@ export default function Bookings() {
               <div className="pl-6">{booking.customer?.phone || 'No phone'}</div>
               <div className="pl-6">{booking.customer?.email || 'No email'}</div>
             </div>
+
+            {/* Payment (from payments table linked to this booking) */}
+            <div className="mt-2">
+              {booking.paymentStatus === 'successful' ? (
+                <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 border border-green-200">
+                  Payment Successful — ${(booking.amountPaid || 0).toFixed(2)}
+                </span>
+              ) : booking.paymentStatus === 'failed' ? (
+                <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 border border-red-200">
+                  Payment Failed{booking.attemptedAmount ? ` — $${booking.attemptedAmount.toFixed(2)} attempted` : ''}
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground border">
+                  No payment record
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">

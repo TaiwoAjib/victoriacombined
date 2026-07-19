@@ -96,6 +96,10 @@ export const getBookings = async (req: Request, res: Response): Promise<void> =>
             }
           }
         },
+        payments: {
+          select: { amount: true, status: true, currency: true, createdAt: true },
+          orderBy: { createdAt: 'desc' }
+        },
       },
       orderBy: { bookingDate: 'desc' }
     });
@@ -123,15 +127,36 @@ export const getBookings = async (req: Request, res: Response): Promise<void> =>
         if (booking.stylist) {
              price += getStylistSurcharge(booking.stylist, booking.styleId);
         }
-        
+
+        // Summarise linked payment records (payments table).
+        // "Successful" mirrors the reports dashboard, which counts status === 'succeeded'.
+        const payments = (booking as any).payments as { amount: any; status: string | null; currency: string | null }[] | undefined || [];
+        const succeeded = payments.filter(p => (p.status || '').toLowerCase() === 'succeeded');
+        const amountPaid = succeeded.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        let paymentStatus: 'successful' | 'failed' | null = null;
+        if (succeeded.length > 0) {
+            paymentStatus = 'successful';
+        } else if (payments.length > 0) {
+            paymentStatus = 'failed';
+        }
+        // For a failed/unsuccessful attempt, surface the most recent attempted amount.
+        const attemptedAmount = payments.length > 0 ? Number(payments[0].amount || 0) : 0;
+        const paymentCurrency = payments.length > 0 ? (payments[0].currency || 'USD') : 'USD';
+
+        const { payments: _payments, ...bookingRest } = booking as any;
+
         return {
-            ...booking,
+            ...bookingRest,
             bookingDate: booking.bookingDate ? booking.bookingDate.toISOString().split('T')[0] : null,
             bookingTime: booking.bookingTime ? `${String(booking.bookingTime.getUTCHours()).padStart(2, '0')}:${String(booking.bookingTime.getUTCMinutes()).padStart(2, '0')}` : null,
             serviceName: booking.category?.name,
             styleName: booking.style?.name,
             price,
-            duration
+            duration,
+            amountPaid,
+            attemptedAmount,
+            paymentStatus,
+            paymentCurrency
         };
     }));
 
