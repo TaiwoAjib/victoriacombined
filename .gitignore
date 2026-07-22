@@ -1,6 +1,5 @@
-# dist is committed on purpose: the app is deployed as prebuilt artifacts so the
-# shared-hosting server only installs runtime dependencies and never builds.
 node_modules
+dist
 dist-ssr
 *.local
 .env
