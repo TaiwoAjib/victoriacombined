@@ -7,6 +7,18 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist/client",
+    rollupOptions: {
+      output: {
+        // Split the largest independent libraries into their own chunks so
+        // browsers download them in parallel and cache them across deploys
+        // (app-code changes no longer invalidate the whole 1.3MB bundle).
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-charts": ["recharts"],
+          "vendor-stripe": ["@stripe/stripe-js", "@stripe/react-stripe-js"],
+        },
+      },
+    },
   },
   server: {
     host: "::",

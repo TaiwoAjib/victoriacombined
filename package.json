@@ -9,6 +9,8 @@
     "dev": "vite",
     "dev:server": "ts-node-dev server/index.ts",
     "build": "npm run build:server && npm run build:client",
+    "postbuild": "node -e \"const fs=require('fs');['node_modules/.cache','node_modules/.vite'].forEach(p=>fs.rmSync(p,{recursive:true,force:true}))\"",
+    "slim": "node -e \"const fs=require('fs');['node_modules/@prisma/engines'].forEach(p=>fs.rmSync(p,{recursive:true,force:true}))\"",
     "build:server": "prisma generate && tsc -p tsconfig.server.json",
     "build:client": "vite build",
     "start": "node server.js",
