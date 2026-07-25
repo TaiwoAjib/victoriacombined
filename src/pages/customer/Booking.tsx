@@ -401,9 +401,9 @@ export default function Booking() {
     }
   };
   
-  const handlePaymentSuccess = async (_paymentIntentId: string) => {
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     if (!selectedStyleId || !selectedDate || !selectedTime) return;
-    
+
     setLoading(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -415,6 +415,7 @@ export default function Booking() {
         time: selectedTime,
         guestDetails: isLoggedIn ? { ...guestDetails, smsConsent: authSmsConsent } : guestDetails,
         promoId: activePromo ? activePromo.id : undefined,
+        paymentIntentId,
       });
 
       setStep(7);

@@ -137,14 +137,17 @@ model Booking {
 
 model Payment {
   id              String   @id @default(uuid()) @db.Uuid
-  bookingId       String   @map("booking_id") @db.Uuid
+  // Nullable: a payment intent is recorded when checkout starts, before the
+  // booking exists, and failed attempts may never produce a booking at all.
+  bookingId       String?  @map("booking_id") @db.Uuid
   stripePaymentId String?  @map("stripe_payment_id") @db.VarChar(255)
   amount          Decimal  @db.Decimal(10, 2)
   currency        String   @default("USD") @db.VarChar(10)
   status          String?  @db.VarChar(30)
   createdAt       DateTime @default(now()) @map("created_at")
-  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking         Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  @@index([stripePaymentId])
   @@map("payments")
 }
 

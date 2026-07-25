@@ -1,12 +1,9 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
-import Stripe from 'stripe';
 import bcrypt from 'bcryptjs';
 import { emailService } from '../services/emailService';
 import { notificationQueue } from '../services/notificationQueueService';
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_PLACEHOLDER', {
-  apiVersion: '2025-01-27.acacia' as any,
-});
+import stripe, { recordPaymentFromIntent } from '../utils/stripe';
 
 const getStylistSurcharge = (stylist: any, styleId: string | null): number => {
     if (!stylist) return 0;
@@ -169,7 +166,7 @@ export const getBookings = async (req: Request, res: Response): Promise<void> =>
 
 export const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { styleId, categoryId, stylistId, date, time, guestDetails, promoId } = req.body;
+    const { styleId, categoryId, stylistId, date, time, guestDetails, promoId, paymentIntentId } = req.body;
 
     // Parse Date and Time
     const bookingDate = new Date(date + 'T00:00:00Z');
@@ -380,6 +377,18 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
         console.error('Booking transaction failed:', transactionError);
         res.status(409).json({ message: transactionError.message || 'Booking failed. Please try again.' });
         return;
+    }
+
+    // Record / confirm the deposit payment against this booking. We retrieve the
+    // PaymentIntent straight from Stripe (authoritative), so the stored amount and
+    // status reflect the real charge and the pre-created intent row gets linked to
+    // the booking. Never let payment logging fail the booking itself.
+    if (paymentIntentId) {
+        try {
+            await recordPaymentFromIntent(prisma, paymentIntentId, result.id);
+        } catch (paymentError) {
+            console.error('Failed to record payment for booking', result.id, paymentError);
+        }
     }
 
     const finalBooking = {
@@ -848,6 +857,23 @@ export const createPaymentIntent = async (req: Request, res: Response): Promise<
        automatic_payment_methods: { enabled: false },
        payment_method_types: ["card", "us_bank_account"]
     });
+
+    // Pre-record the payment attempt immediately, before the customer confirms.
+    // Guarantees every intent leaves a row (linked to a booking later, or marked
+    // succeeded/failed by the webhook) even if the browser never comes back.
+    try {
+      await prisma.payment.create({
+        data: {
+          stripePaymentId: paymentIntent.id,
+          amount: (Number(amount) || 0) / 100,
+          currency: 'USD',
+          status: paymentIntent.status,
+          bookingId: null,
+        },
+      });
+    } catch (recordError) {
+      console.error('Failed to pre-record payment intent', paymentIntent.id, recordError);
+    }
 
     res.send({
       clientSecret: paymentIntent.client_secret,

@@ -27,6 +27,7 @@ export interface CreateBookingData {
   time: string; // HH:mm
   guestDetails?: GuestDetails;
   promoId?: string | null;
+  paymentIntentId?: string;
 }
 
 export interface CreateAdminBookingData {

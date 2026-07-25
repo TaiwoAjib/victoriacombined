@@ -23,6 +23,7 @@ import faqRoutes from './routes/faqRoutes';
 import bookingPolicyRoutes from './routes/bookingPolicyRoutes';
 import galleryRoutes from './routes/galleryRoutes';
 import promoRoutes from './routes/promoRoutes';
+import { handleStripeWebhook } from './controllers/paymentController';
 import cron from 'node-cron';
 import { reminderService } from './services/reminderService';
 
@@ -33,6 +34,10 @@ const app = express();
 
 // Disable ETag to prevent 304 Not Modified responses
 app.set('etag', false);
+
+// Stripe webhook MUST be registered before express.json() and with a raw body
+// parser, because signature verification needs the exact unparsed payload.
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 // Middleware
 app.use(express.json());
