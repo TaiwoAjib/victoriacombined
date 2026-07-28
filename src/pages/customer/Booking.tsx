@@ -416,6 +416,7 @@ export default function Booking() {
         guestDetails: isLoggedIn ? { ...guestDetails, smsConsent: authSmsConsent } : guestDetails,
         promoId: activePromo ? activePromo.id : undefined,
         paymentIntentId,
+        paymentAmount: TOTAL_DEPOSIT_CENTS,
       });
 
       setStep(7);

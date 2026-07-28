@@ -3,7 +3,7 @@ import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import { emailService } from '../services/emailService';
 import { notificationQueue } from '../services/notificationQueueService';
-import stripe, { recordPaymentFromIntent } from '../utils/stripe';
+import stripe, { linkBookingPayment } from '../utils/stripe';
 
 const getStylistSurcharge = (stylist: any, styleId: string | null): number => {
     if (!stylist) return 0;
@@ -166,7 +166,7 @@ export const getBookings = async (req: Request, res: Response): Promise<void> =>
 
 export const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { styleId, categoryId, stylistId, date, time, guestDetails, promoId, paymentIntentId } = req.body;
+    const { styleId, categoryId, stylistId, date, time, guestDetails, promoId, paymentIntentId, paymentAmount } = req.body;
 
     // Parse Date and Time
     const bookingDate = new Date(date + 'T00:00:00Z');
@@ -379,13 +379,18 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
         return;
     }
 
-    // Record / confirm the deposit payment against this booking. We retrieve the
-    // PaymentIntent straight from Stripe (authoritative), so the stored amount and
-    // status reflect the real charge and the pre-created intent row gets linked to
-    // the booking. Never let payment logging fail the booking itself.
+    // Link the deposit payment to this booking directly in the DB (no Stripe
+    // round-trip → no latency, and it always writes a row whose booking_id
+    // matches the booking). The client only reaches here after Stripe reported
+    // status 'succeeded'. The webhook reconciles the exact amount/status later.
     if (paymentIntentId) {
         try {
-            await recordPaymentFromIntent(prisma, paymentIntentId, result.id);
+            await linkBookingPayment(prisma, {
+                paymentIntentId,
+                bookingId: result.id,
+                amountCents: Number(paymentAmount) || 0,
+                status: 'succeeded',
+            });
         } catch (paymentError) {
             console.error('Failed to record payment for booking', result.id, paymentError);
         }

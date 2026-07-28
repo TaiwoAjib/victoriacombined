@@ -28,6 +28,7 @@ export interface CreateBookingData {
   guestDetails?: GuestDetails;
   promoId?: string | null;
   paymentIntentId?: string;
+  paymentAmount?: number; // amount paid, in cents
 }
 
 export interface CreateAdminBookingData {

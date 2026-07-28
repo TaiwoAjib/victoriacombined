@@ -57,3 +57,50 @@ export const recordPaymentFromIntent = async (
     },
   });
 };
+
+/**
+ * Link a payment to its booking directly in the database — NO Stripe API call.
+ *
+ * Called the instant a booking is created after a successful client-side
+ * payment. Because it never round-trips to Stripe, it adds no latency and can't
+ * fail on a flaky API call, so every paid booking reliably gets a payments row
+ * whose booking_id matches the booking. If the intent was pre-recorded at
+ * checkout, that existing row is updated (and linked); otherwise a new row is
+ * created with booking_id set — which works even if the nullable-booking_id
+ * migration hasn't run yet. The webhook later reconciles the exact amount/status.
+ */
+export const linkBookingPayment = async (
+  prisma: any,
+  opts: { paymentIntentId: string; bookingId: string; amountCents?: number; status?: string }
+) => {
+  const { paymentIntentId, bookingId } = opts;
+  const status = opts.status || 'succeeded';
+  const amount = (opts.amountCents || 0) / 100;
+
+  const existing = await prisma.payment.findFirst({
+    where: { stripePaymentId: paymentIntentId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (existing) {
+    return prisma.payment.update({
+      where: { id: existing.id },
+      data: {
+        bookingId,
+        status,
+        // Keep a real recorded amount if the pre-record already had one
+        ...(Number(existing.amount) > 0 ? {} : { amount }),
+      },
+    });
+  }
+
+  return prisma.payment.create({
+    data: {
+      stripePaymentId: paymentIntentId,
+      bookingId,
+      amount,
+      currency: 'USD',
+      status,
+    },
+  });
+};
