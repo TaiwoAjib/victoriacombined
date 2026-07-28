@@ -26,6 +26,7 @@ import promoRoutes from './routes/promoRoutes';
 import { handleStripeWebhook } from './controllers/paymentController';
 import cron from 'node-cron';
 import { reminderService } from './services/reminderService';
+import { purgeService } from './services/purgeService';
 
 // Load environment variables
 dotenv.config();
@@ -99,6 +100,12 @@ export const scheduleReminders = () => {
   cron.schedule('0 * * * *', () => {
     console.log('Running scheduled reminder check...');
     reminderService.checkAndSendReminders();
+  });
+
+  // Daily data-retention purge at 03:00 server time (destructive; see purgeService)
+  cron.schedule('0 3 * * *', () => {
+    console.log('Running scheduled data-retention purge...');
+    purgeService.purgeOldRecords();
   });
 };
 
