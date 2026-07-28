@@ -929,6 +929,14 @@ export default function Bookings() {
               <div className="pl-6">{booking.customer?.email || 'No email'}</div>
             </div>
 
+            {/* Booking status */}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground uppercase">Status:</span>
+              <Badge variant="secondary" className={getStatusColor(booking.status)}>
+                {booking.status.replace('_', ' ').toUpperCase()}
+              </Badge>
+            </div>
+
             {/* Payment (from payments table linked to this booking) */}
             <div className="mt-2">
               {booking.paymentStatus === 'successful' ? (
