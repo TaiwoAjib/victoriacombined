@@ -95,15 +95,16 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Schedule Reminder Job (Every hour at minute 0)
+// Scheduled jobs — all run once a day at 02:00 server time
 export const scheduleReminders = () => {
-  cron.schedule('0 * * * *', () => {
+  // Appointment reminders
+  cron.schedule('0 2 * * *', () => {
     console.log('Running scheduled reminder check...');
     reminderService.checkAndSendReminders();
   });
 
-  // Daily data-retention purge at 03:00 server time (destructive; see purgeService)
-  cron.schedule('0 3 * * *', () => {
+  // Data-retention purge (destructive; see purgeService)
+  cron.schedule('0 2 * * *', () => {
     console.log('Running scheduled data-retention purge...');
     purgeService.purgeOldRecords();
   });
