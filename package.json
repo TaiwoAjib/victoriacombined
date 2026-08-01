@@ -13,7 +13,7 @@
     "slim": "node -e \"const fs=require('fs');['node_modules/@prisma/engines'].forEach(p=>fs.rmSync(p,{recursive:true,force:true}))\"",
     "build:server": "prisma generate && tsc -p tsconfig.server.json",
     "build:client": "vite build",
-    "start": "node server.js",
+    "start": "node --expose-gc --max-old-space-size=512 server.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "db:export": "tsx prisma/export-data.ts",

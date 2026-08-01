@@ -27,6 +27,7 @@ import { handleStripeWebhook } from './controllers/paymentController';
 import cron from 'node-cron';
 import { reminderService } from './services/reminderService';
 import { purgeService } from './services/purgeService';
+export { startMemoryManager } from './services/memoryManager';
 
 // Load environment variables
 dotenv.config();
@@ -95,15 +96,15 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Scheduled jobs — all run once a day at 02:00 server time
+// Scheduled jobs
 export const scheduleReminders = () => {
-  // Appointment reminders
-  cron.schedule('0 2 * * *', () => {
+  // Appointment reminders — hourly at minute 0
+  cron.schedule('0 * * * *', () => {
     console.log('Running scheduled reminder check...');
     reminderService.checkAndSendReminders();
   });
 
-  // Data-retention purge (destructive; see purgeService)
+  // Data-retention purge — daily at 02:00 server time (destructive; see purgeService)
   cron.schedule('0 2 * * *', () => {
     console.log('Running scheduled data-retention purge...');
     purgeService.purgeOldRecords();
