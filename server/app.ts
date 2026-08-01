@@ -98,8 +98,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Scheduled jobs
 export const scheduleReminders = () => {
-  // Appointment reminders — hourly at minute 0
-  cron.schedule('0 * * * *', () => {
+  // Appointment reminders — every 6 hours (00:00, 06:00, 12:00, 18:00)
+  cron.schedule('0 */6 * * *', () => {
     console.log('Running scheduled reminder check...');
     reminderService.checkAndSendReminders();
   });
